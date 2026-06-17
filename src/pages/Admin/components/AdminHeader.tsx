@@ -1,4 +1,4 @@
-import type { SyntheticEvent } from 'react';
+import { useEffect, useRef, type SyntheticEvent } from 'react';
 import { logout, type HomeSnapshot } from '../../../api/adminApi';
 import { roleLabel } from '../adminTypes';
 import * as S from '../AdminDashboard.styled';
@@ -36,17 +36,50 @@ type AdminHeaderProps = {
 
 export function AdminHeader({ user, token, profileOpen, setProfileOpen, navigateLogin }: AdminHeaderProps) {
   const profileImageSrc = resolveProfileImageSrc(user.profileImageUrl);
+  const profileButtonRef = useRef<HTMLButtonElement>(null);
+  const profileCardRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (!profileOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (profileButtonRef.current?.contains(target)) return;
+      if (profileCardRef.current?.contains(target)) return;
+      setProfileOpen(false);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setProfileOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [profileOpen, setProfileOpen]);
 
   return (
     <S.Topbar>
       <S.HeaderLogo src="/assets/brand/ieum-header-logo.png" alt="IEUM" />
-      <S.ProfileButton type="button" onClick={() => setProfileOpen(!profileOpen)} aria-label="프로필">
+      <S.ProfileButton
+        ref={profileButtonRef}
+        type="button"
+        onClick={() => setProfileOpen(!profileOpen)}
+        aria-label="프로필"
+        aria-expanded={profileOpen}
+      >
         <S.ProfileAvatar>
           <img src={profileImageSrc} alt="" aria-hidden="true" onError={handleProfileImageError} />
         </S.ProfileAvatar>
       </S.ProfileButton>
       {profileOpen ? (
-        <S.ProfileCard>
+        <S.ProfileCard ref={profileCardRef}>
           <S.ProfileRow>
             <S.LargeAvatar src={profileImageSrc} alt="" aria-hidden="true" onError={handleProfileImageError} />
             <div>
