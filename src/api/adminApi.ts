@@ -1,4 +1,6 @@
 const API_BASE_URL = import.meta.env.VITE_IEUM_API_BASE_URL ?? '/api';
+const ADMIN_TOKEN_KEY = 'ieum_admin_token';
+const OAUTH_STORAGE_KEYS = ['mirim_oauth_tokens', 'mirim_oauth_user'] as const;
 
 export type AdminUser = {
   readonly id: string;
@@ -120,21 +122,25 @@ export async function loginWithMirimToken(accessToken: string): Promise<AdminUse
     method: 'POST',
     body: JSON.stringify({ accessToken }),
   });
-  localStorage.setItem('ieum_admin_token', session.token);
+  localStorage.setItem(ADMIN_TOKEN_KEY, session.token);
   return session.user;
 }
 
 export function readStoredToken(): string {
-  return localStorage.getItem('ieum_admin_token') ?? '';
+  return localStorage.getItem(ADMIN_TOKEN_KEY) ?? '';
 }
 
 export function clearStoredToken(): void {
-  localStorage.removeItem('ieum_admin_token');
+  clearAuthStorage(localStorage);
+  clearAuthStorage(sessionStorage);
 }
 
 export async function logout(accessToken: string): Promise<void> {
-  await request<{ status: string }>('/auth/logout', accessToken, { method: 'POST' });
-  clearStoredToken();
+  try {
+    await request<{ status: string }>('/auth/logout', accessToken, { method: 'POST' });
+  } finally {
+    clearStoredToken();
+  }
 }
 
 export async function fetchHomeSnapshot(accessToken: string): Promise<HomeSnapshot> {
@@ -232,9 +238,23 @@ async function request<T>(path: string, accessToken: string, init: RequestInit =
   });
   const payload: unknown = await readPayload(response);
   if (!response.ok) {
+    if (response.status === 401) {
+      clearStoredToken();
+    }
     throw new Error(readErrorMessage(payload) ?? `API request failed: ${response.status}`);
   }
   return readEnvelope<T>(payload);
+}
+
+function clearAuthStorage(store: Storage): void {
+  try {
+    store.removeItem(ADMIN_TOKEN_KEY);
+    for (const key of OAUTH_STORAGE_KEYS) {
+      store.removeItem(key);
+    }
+  } catch {
+    // Storage access can fail in private mode; logout should still continue.
+  }
 }
 
 async function readPayload(response: Response): Promise<unknown> {

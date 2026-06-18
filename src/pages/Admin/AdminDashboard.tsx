@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { fetchHomeSnapshot, readStoredToken, type HomeSnapshot } from '../../api/adminApi';
+import { clearStoredToken, fetchHomeSnapshot, readStoredToken, type HomeSnapshot } from '../../api/adminApi';
 import { AdminHeader } from './components/AdminHeader';
 import { DashboardSkeleton } from './components/DashboardSkeleton';
 import { StaffDashboard } from './components/StaffDashboard';
@@ -92,6 +92,7 @@ async function loadSnapshot(
     setMessage(caught.message);
     setStatus('error');
     if (caught.message.includes('401') || caught.message.includes('로그인') || caught.message.includes('Unauthorized')) {
+      clearStoredToken();
       navigate('/login', { replace: true });
     }
   }
