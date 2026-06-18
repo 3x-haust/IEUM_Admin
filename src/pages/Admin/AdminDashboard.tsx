@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { clearStoredToken, fetchHomeSnapshot, readStoredToken, type HomeSnapshot } from '../../api/adminApi';
+import { clearStoredToken, fetchHomeSnapshot, readStoredToken, subscribeRealtimeEvents, type HomeSnapshot } from '../../api/adminApi';
 import { AdminHeader } from './components/AdminHeader';
 import { DashboardSkeleton } from './components/DashboardSkeleton';
 import { StaffDashboard } from './components/StaffDashboard';
@@ -26,18 +26,37 @@ function AdminDashboard() {
   const activeStatus: LoadStatus = previewSnapshot ? 'ready' : status;
   const isPreview = Boolean(previewSnapshot);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (options: { readonly silent?: boolean } = {}) => {
     if (!token) {
       navigate('/?preview=student', { replace: true });
       return;
     }
-    await loadSnapshot(token, setSnapshot, setStatus, setMessage, navigate);
+    await loadSnapshot(token, setSnapshot, setStatus, setMessage, navigate, options);
   }, [navigate, token]);
 
   useEffect(() => {
     if (previewSnapshot) return;
     void refresh();
   }, [previewSnapshot, refresh]);
+
+  useEffect(() => {
+    if (previewSnapshot || !token || activeStatus !== 'ready') return;
+    let refreshTimer: number | null = null;
+    const scheduleRefresh = () => {
+      if (refreshTimer) window.clearTimeout(refreshTimer);
+      refreshTimer = window.setTimeout(() => {
+        refreshTimer = null;
+        void refresh({ silent: true });
+      }, 250);
+    };
+    const realtime = subscribeRealtimeEvents({
+      onMessage: scheduleRefresh,
+    });
+    return () => {
+      if (refreshTimer) window.clearTimeout(refreshTimer);
+      realtime.close();
+    };
+  }, [activeStatus, previewSnapshot, refresh, token]);
 
   if (activeStatus === 'loading') return <DashboardSkeleton />;
   if (activeStatus === 'error' || !activeSnapshot) return <ErrorScreen message={message} onLogin={() => navigate('/login', { replace: true })} />;
@@ -81,16 +100,17 @@ async function loadSnapshot(
   setStatus: (status: LoadStatus) => void,
   setMessage: (message: string) => void,
   navigate: (to: string, options: { readonly replace: boolean }) => void,
+  options: { readonly silent?: boolean } = {},
 ): Promise<void> {
   try {
-    setStatus('loading');
+    if (!options.silent) setStatus('loading');
     setSnapshot(await fetchHomeSnapshot(token));
     setMessage('');
     setStatus('ready');
   } catch (caught) {
     if (!(caught instanceof Error)) throw caught;
     setMessage(caught.message);
-    setStatus('error');
+    if (!options.silent) setStatus('error');
     if (caught.message.includes('401') || caught.message.includes('로그인') || caught.message.includes('Unauthorized')) {
       clearStoredToken();
       navigate('/login', { replace: true });

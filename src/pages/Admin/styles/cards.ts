@@ -204,6 +204,66 @@ export const FeedbackCard = styled.article`
   background: #ffffff;
 `;
 
+export const FeedbackSummaryGrid = styled.section`
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+
+  @media (max-width: 1120px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const FeedbackSummaryCard = styled.article`
+  min-height: 132px;
+  padding: 22px;
+  border: 1px solid #e5e5e5;
+  border-radius: 18px;
+  background: #ffffff;
+`;
+
+export const FeedbackSummaryHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #222222;
+
+  span {
+    font-size: 18px;
+    font-weight: 500;
+  }
+
+  strong {
+    font-size: 26px;
+    font-weight: 600;
+  }
+`;
+
+export const FeedbackSummaryItems = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+`;
+
+export const FeedbackSummaryItem = styled.div`
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: #f7f7f7;
+  color: #444444;
+  font-size: 14px;
+
+  strong {
+    color: #e74e5b;
+    font-weight: 600;
+  }
+`;
+
 export const ProjectChip = styled.span<{ readonly $color: string }>`
   display: inline-flex;
   min-height: 30px;
@@ -240,6 +300,25 @@ export const CardBody = styled.p`
   line-height: 30px;
   word-break: keep-all;
   overflow-wrap: anywhere;
+`;
+
+export const FeedbackMetaList = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+`;
+
+export const FeedbackMetaChip = styled.span`
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: #f5f5f5;
+  color: #555555;
+  font-size: 13px;
+  line-height: 28px;
 `;
 
 export const CardFooter = styled.div`

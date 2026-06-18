@@ -19,7 +19,7 @@ import {
 } from '../contactListUtils';
 import { AdminManagement } from './AdminManagement';
 import { ContactDetail } from './ContactDetail';
-import { FeedbackList } from './FeedbackList';
+import { FeedbackAudienceSummary, FeedbackList } from './FeedbackList';
 import * as S from '../AdminDashboard.styled';
 
 type StaffDashboardProps = {
@@ -178,7 +178,10 @@ export function StaffDashboard({ snapshot, view, setView, sort, setSort, token, 
             onSelect={openContact}
           />
         ) : (
-          <FeedbackList feedback={feedback} token={token} canModerate isPreview={isPreview} />
+          <>
+            <FeedbackAudienceSummary feedback={feedback} />
+            <FeedbackList feedback={feedback} token={token} canModerate isPreview={isPreview} />
+          </>
         )}
         {snapshot.user.role === 'admin' ? <AdminManagement snapshot={snapshot} token={token} onChanged={refresh} isPreview={isPreview} /> : null}
       </S.Desk>

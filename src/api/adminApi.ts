@@ -27,6 +27,9 @@ export type DashboardStats = {
   readonly newContactCount: number;
   readonly interestCount: number;
   readonly feedbackByStatus: StatusCounts;
+  readonly feedbackByAgeGroup: StatusCounts;
+  readonly feedbackByGender: StatusCounts;
+  readonly feedbackByVisitorType: StatusCounts;
   readonly contactsByStatus: StatusCounts;
 };
 
@@ -50,6 +53,10 @@ export type FeedbackStatus = 'public' | 'blocked' | 'deleted';
 export type Feedback = {
   readonly id: string;
   readonly projectId: string;
+  readonly visitorProfileId: string | null;
+  readonly ageGroup: string | null;
+  readonly visitorType: string | null;
+  readonly gender: string | null;
   readonly content: string;
   readonly status: FeedbackStatus;
   readonly moderationReason: string | null;
@@ -107,6 +114,21 @@ export type StudentSnapshot = {
 };
 
 export type HomeSnapshot = StaffSnapshot | StudentSnapshot;
+
+export type RealtimeEventType = 'feedback.created' | 'feedback.status_changed' | 'contact.created' | 'contact.status_changed';
+
+export type RealtimeEventPayload = {
+  readonly id: string;
+  readonly type: RealtimeEventType | string;
+  readonly projectId: string | null;
+  readonly payload: Record<string, unknown>;
+  readonly createdAt: string;
+};
+
+export type RealtimeEventHandlers = {
+  readonly onMessage: (event: RealtimeEventPayload) => void;
+  readonly onError?: () => void;
+};
 
 type ApiEnvelope<T> = {
   readonly data: T;
@@ -224,6 +246,21 @@ export async function deleteBannedWord(accessToken: string, id: string): Promise
   await request<{ status: string }>(`/admin/banned-words/${id}`, accessToken, { method: 'DELETE' });
 }
 
+export function subscribeRealtimeEvents({ onMessage, onError }: RealtimeEventHandlers): EventSource {
+  const source = new EventSource(buildApiUrl('/realtime/events'), { withCredentials: true });
+  const eventTypes: readonly RealtimeEventType[] = ['feedback.created', 'feedback.status_changed', 'contact.created', 'contact.status_changed'];
+  for (const type of eventTypes) {
+    source.addEventListener(type, (event) => {
+      const payload = parseRealtimeEvent(event);
+      if (payload) onMessage(payload);
+    });
+  }
+  source.onerror = () => {
+    onError?.();
+  };
+  return source;
+}
+
 async function request<T>(path: string, accessToken: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
   headers.set('Accept', 'application/json');
@@ -291,4 +328,21 @@ function readErrorMessage(payload: unknown): string | null {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function parseRealtimeEvent(event: Event): RealtimeEventPayload | null {
+  if (!('data' in event) || typeof event.data !== 'string') return null;
+  try {
+    const parsed = JSON.parse(event.data) as unknown;
+    if (!isRecord(parsed) || typeof parsed.id !== 'string' || typeof parsed.type !== 'string') return null;
+    return {
+      id: parsed.id,
+      type: parsed.type,
+      projectId: typeof parsed.projectId === 'string' ? parsed.projectId : null,
+      payload: isRecord(parsed.payload) ? parsed.payload : {},
+      createdAt: typeof parsed.createdAt === 'string' ? parsed.createdAt : new Date().toISOString(),
+    };
+  } catch {
+    return null;
+  }
 }
