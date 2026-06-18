@@ -46,23 +46,15 @@ export function FeedbackList({ feedback, token = '', canModerate = false, isPrev
       {visibleFeedback.map((item) => {
         const status = statusById[item.id] ?? item.status;
         const nextStatus = status === 'public' ? 'blocked' : 'public';
-        const metaItems = [
-          formatFeedbackMeta(item.ageGroup, AGE_LABELS),
-          formatFeedbackMeta(item.gender, GENDER_LABELS),
-          formatFeedbackMeta(item.visitorType, VISITOR_TYPE_LABELS),
-        ].filter((label) => label !== '미응답');
         return (
           <S.FeedbackCard key={item.id}>
             <S.ProjectChip $color={projectColor(item.project)}>{item.project?.serviceName ?? 'Project'}</S.ProjectChip>
             <S.CardTitle>{item.project?.teamName ?? item.project?.boothSlot ?? '기똥찬 라이언'}</S.CardTitle>
             <S.CardBody>{item.content}</S.CardBody>
-            {metaItems.length > 0 ? (
-              <S.FeedbackMetaList>
-                {metaItems.map((label) => (
-                  <S.FeedbackMetaChip key={label}>{label}</S.FeedbackMetaChip>
-                ))}
-              </S.FeedbackMetaList>
-            ) : null}
+            <S.FeedbackAudienceLine>
+              <S.FeedbackAudienceLabel>보낸 사람</S.FeedbackAudienceLabel>
+              <span>{formatFeedbackAudience(item)}</span>
+            </S.FeedbackAudienceLine>
             <S.CardFooter>
               <span>{formatDate(item.createdAt)}</span>
               {canModerate ? (
@@ -183,4 +175,13 @@ function orderedBreakdown(counts: ReadonlyMap<string, number>, labels: Record<st
 function formatFeedbackMeta(value: string | null, labels: Record<string, string>): string {
   if (!value) return '미응답';
   return labels[value] ?? value;
+}
+
+function formatFeedbackAudience(feedback: FeedbackWithProject): string {
+  const gender = formatFeedbackMeta(feedback.gender, GENDER_LABELS);
+  const ageGroup = formatFeedbackMeta(feedback.ageGroup, AGE_LABELS);
+  const purpose = feedback.visitorType
+    ? `${formatFeedbackMeta(feedback.visitorType, VISITOR_TYPE_LABELS)} 목적`
+    : '목적 미응답';
+  return `${gender} · ${ageGroup} · ${purpose}`;
 }

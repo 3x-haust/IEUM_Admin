@@ -302,6 +302,32 @@ export const CardBody = styled.p`
   overflow-wrap: anywhere;
 `;
 
+export const FeedbackAudienceLine = styled.div`
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #f0f0f0;
+  color: #444444;
+  font-size: 14px;
+  line-height: 22px;
+`;
+
+export const FeedbackAudienceLabel = styled.span`
+  display: inline-flex;
+  min-height: 26px;
+  align-items: center;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: #fff3f4;
+  color: #e74e5b;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 26px;
+`;
+
 export const FeedbackMetaList = styled.div`
   display: flex;
   flex-wrap: wrap;
