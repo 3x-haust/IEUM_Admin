@@ -54,11 +54,13 @@ const resolveFile = async (url) => {
   }
 };
 
+const port = Number(process.env.PORT ?? 3000);
+
 createServer(async (request, response) => {
   const filePath = await resolveFile(request.url ?? '/');
   response.setHeader('Content-Type', types[extname(filePath)] ?? 'application/octet-stream');
   createReadStream(filePath).pipe(response);
-}).listen(3000, '0.0.0.0');
+}).listen(port, '0.0.0.0');
 EOF
 
 EXPOSE 3000
